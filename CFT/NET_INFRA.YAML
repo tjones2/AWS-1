@@ -130,4 +130,4 @@ Resources:
     Properties:
       RouteTableId: !Ref RouteTablePrivate
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref NATgateway
+      NatGatewayId: !Ref NATgateway
