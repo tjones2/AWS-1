@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Creates VPC with two subnets, One public and One private'
+Parameters:
+  VpcCidr:
+    Type: String
+    Description: "Select Your VPC and then base your subnets off the selected Value"
+    Default: 192.168.0.0/16
+    AllowedValues:
+      - 192.168.0.0/16
+      - 10.1.0.0/16
+  SubnetCidrPublic:
+    Type: String
+    Description: "Select your Public Subnet Cidr/IP range"
+    Default: 192.168.1.0/24
+    AllowedValues:
+      - 192.168.1.0/24
+      - 192.168.2.0/24
+      - 192.168.3.0/24
+      - 192.168.4.0/24
+      - 10.1.1.0/24
+      - 10.1.2.0/24
+      - 10.1.3.0/24
+      - 10.1.4.0/24
+
+
+  SubnetCidrPrivate:
+    Type: String
+    Default: 192.168.2.0/24
+    Description: "Select your Private Subnet Cidr/IP range"
+    AllowedValues:
+      - 192.168.1.0/24
+      - 192.168.2.0/24
+      - 192.168.3.0/24
+      - 192.168.4.0/24
+      - 10.1.1.0/24
+      - 10.1.2.0/24
+      - 10.1.3.0/24
+      - 10.1.4.0/24
+
+  Environment:
+    Type: String
+    Default: Dev
+    AllowedValues:
+      - Dev
+      - Pre
+      - Init
+      - Prod
+  AvailabiltyZones1:
+    Type: AWS::EC2::AvailabilityZone::Name
+  AvailabiltyZones2:
+    Type: AWS::EC2::AvailabilityZone::Name
+Resources:
+  MyVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+      - Key: Name
+        Value: !Sub "vpc-${Environment}-${AWS::Region}"
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    DependsOn: MyVpc
+    Properties:
+      AvailabilityZone: !Ref AvailabiltyZones1
+      CidrBlock: !Ref SubnetCidrPublic
+      VpcId: !Ref MyVpc
+      Tags:
+      - Key: Name
+        Value: !Sub "subnet-public-${Environment}-${AWS::Region}"
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    DependsOn: MyVpc
+    Properties:
+      AvailabilityZone: !Ref AvailabiltyZones2
+      CidrBlock: !Ref SubnetCidrPrivate
+      VpcId: !Ref MyVpc
+      Tags:
+      - Key: Name
+        Value: !Sub "subnet-private-${Environment}-${AWS::Region}"
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: !Sub "IGW-${Environment}-${AWS::Region}"
+      - Key: Environment
+        Value: !Ref Environment
+  AttachIGW:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref MyVpc
+  NATgateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - EIP
+        - AllocationId
+      SubnetId: !Ref PrivateSubnet
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  RouteTablePublic:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVpc
+      Tags:
+      - Key: Name
+        Value: !Sub "public-route-table-${Environment}"
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTablePublic
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+  RouteTablePrivate:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVpc
+      Tags:
+      - Key: Name
+        Value: !Sub "private-route-table-${Environment}"
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTablePrivate
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref NATgateway
