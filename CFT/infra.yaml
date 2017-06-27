@@ -182,11 +182,11 @@ Outputs:
     Value: !Ref VpcCidr
     Export:
       Name: !Sub "${AWS::StackName}-VpcCidr"
-  PublicSubnet:
+  PublicSubnetId:
     Value: !Ref PublicSubnet
     Export:
       Name: !Sub "${AWS::StackName}-PublicSubnet-ID"
-  PrivateSubnet:
+  PrivateSubnetId:
     Value: !Ref PrivateSubnet
     Export:
       Name: !Sub "${AWS::StackName}-PrivateSubnet-ID"

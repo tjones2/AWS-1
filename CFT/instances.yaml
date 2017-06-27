@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Creates One Bastion Host, ELB and EC2 instances running in a private subnet'
+Parameters:
+  Environment:
+    Type: String
+    Default: Dev
+    AllowedValues:
+      - Dev
+      - Pre
+      - Init
+      - Prod
+  KeyPair:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: EC2 KeyPair for ssh to Bastion
+    Default: tylerjones
+  LinuxAMI:
+    Type: AWS::EC2::Image::Id
+    Description: Default Amazon LinuxAMI
+    Default: ami-8a7859ef
+  InstanceType:
+    Type: String
+    Description: EC2 instance Type
+    Default: t2.micro
+
+    AllowedValues:
+    - t2.micro
+    - t2.small
+    - t2.medium
+Resources:
+  Bastion:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LinuxAMI
+      KeyName: !Ref KeyPair
+      NetworkInterfaces:
+      - AssociatePublicIpAddress: true
+        DeviceIndex: 0
+        SubnetId:
+          Fn::ImportValue: !Sub ohio-PublicSubnet-ID
